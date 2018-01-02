@@ -17,7 +17,6 @@ import com.example.gongxuan.banner.listener.OnBannerListener
 import com.example.gongxuan.banner.loadPic
 import com.youth.banner.BannerConfig
 import kotlinx.android.synthetic.main.layout_banner.view.*
-import java.util.*
 import kotlin.collections.ArrayList
 
 /**
@@ -242,7 +241,7 @@ class Banner: FrameLayout, ViewPager.OnPageChangeListener {
             container?.addView(imageViews[position])
             listener?.let {
                 view.setOnClickListener {
-                    listener?.OnBannerClick(toRealPosition(position))
+                    listener?.onBannerClick(toRealPosition(position))
                 }
             }
             return view

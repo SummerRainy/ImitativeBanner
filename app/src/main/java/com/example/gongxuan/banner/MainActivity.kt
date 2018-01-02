@@ -11,21 +11,25 @@ import android.support.v4.content.ContextCompat.startActivity
 import android.content.Intent
 import com.bumptech.glide.Glide
 import com.changzhounews.app.http.RetrofitLoader
+import com.example.gongxuan.banner.bean.NewsRecommendList
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import com.example.gongxuan.banner.http.RetrofitService
+import com.example.gongxuan.banner.listener.OnBannerListener
 import com.youth.banner.BannerConfig
 
 
 class MainActivity : AppCompatActivity() {
     private lateinit var recommendImages: ArrayList<String?>
     private lateinit var recommendTitles: ArrayList<String?>
+    private var recommendList: ArrayList<NewsRecommendList.RecommendListBean>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         recommendImages = ArrayList()
         recommendTitles = ArrayList()
+        recommendList = ArrayList()
         getRecommendList()
     }
 
@@ -38,14 +42,16 @@ class MainActivity : AppCompatActivity() {
                 //return observable
                 .subscribe(
                         { result ->
-                            result.recommend_list?.forEach {
+                            recommendList = result.recommend_list
+                            recommendList?.forEach {
                                 recommendImages.add(it.thumb_pic?.url)
                                 recommendTitles.add(it.subject)
                             }
-                            Log.i("MyLog","轮播图 Url： $recommendImages")
+                            Log.i("MyLog", "轮播图 Url： $recommendImages")
                             banner.apply {
                                 setImages(recommendImages)
                                 setTitles(recommendTitles)
+                                setOnBannerListener(bannerListener)
                                 start()
                             }
                         },
@@ -54,5 +60,11 @@ class MainActivity : AppCompatActivity() {
                         }
                 )
 
+    }
+
+    private val bannerListener = object : OnBannerListener {
+        override fun onBannerClick(position: Int) {
+            Log.i("MyLog", "当前点击pid： ${recommendList?.get(position)?.pid};title: ${recommendList?.get(position)?.subject}")
+        }
     }
 }
