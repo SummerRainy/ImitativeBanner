@@ -220,16 +220,18 @@ class Banner: FrameLayout, ViewPager.OnPageChangeListener {
 
     /**
      * 返回真实的位置
+     * ∵imageViews.size = data.size+2(即=0的情况和=count+1的情况，因为是轮回首位相接的)
+     * ∴realDataPosition = when(position) {
+     *  0 -> data.count -1     (0 = 数据的最后一个)
+     *  imageViews.size-1 ->0 //imageViews-1 -1  = count（最后一个 = 数据的第一个）
+     *  else { it -1 } （其他时候为 -1 为当前数据位置）
+     * }
      *
      * @param position
      * @return 下标从0开始
      */
-    fun toRealPosition(position: Int): Int {
-        var realPosition = (position - 1) % count
-        if (realPosition < 0)
-            realPosition += count
-        return realPosition
-    }
+    fun toRealPosition(position: Int): Int = (position - 1+ count) % count
+
     /***/
     inner class BannerPagerAdapter:PagerAdapter() {
         override fun isViewFromObject(view: View?, `object`: Any?): Boolean = view == `object`
