@@ -23,6 +23,11 @@ import kotlin.collections.ArrayList
  * Created by gongxuan on 2017/11/23.
  */
 class Banner: FrameLayout, ViewPager.OnPageChangeListener {
+    private lateinit var viewPager :ScrollableViewPager
+    private lateinit var scroller: BannerScroller
+    private var isScroll = BannerConfig.IS_SCROLL
+    private var scrollTime = BannerConfig.DURATION
+    private var isAutoPlay = BannerConfig.IS_AUTO_PLAY
     private var bannerContext:Context
     private var titles: MutableList<String?>
     private var imageUrls: MutableList<String?>
@@ -38,7 +43,6 @@ class Banner: FrameLayout, ViewPager.OnPageChangeListener {
     private var adapter:BannerPagerAdapter? = null
     private var listener : OnBannerListener? = null
     private lateinit var onPageChangeListener: ViewPager.OnPageChangeListener
-    private lateinit var viewPager:ViewPager
     private var previousPosition = 1
     //private lateinit var indicator : LinearLayout
 
@@ -61,9 +65,10 @@ class Banner: FrameLayout, ViewPager.OnPageChangeListener {
     private fun initView(context: Context,attrs: AttributeSet?) {
         val view = LayoutInflater.from(context).inflate(R.layout.layout_banner, this, true)
         //indicator = view.findViewById(com.youth.banner.R.id.circleIndicator)
-        viewPager = view.findViewById(R.id.bannerViewPager)
+        viewPager = view.findViewById(R.id.scrollViewPager)
         handleTypedArray(context, attrs)
 
+        initViewPagerScroll()
     }
 
     private fun handleTypedArray(context: Context, attrs: AttributeSet?) {
@@ -183,8 +188,36 @@ class Banner: FrameLayout, ViewPager.OnPageChangeListener {
             adapter = this@Banner.adapter
             isFocusable = true
             currentItem = 1
+
+            if (isScroll && count > 1) {
+                viewPager.setIsScroll(true)
+            } else {
+                viewPager.setIsScroll(false)
+            }
         }
+
+        if (isAutoPlay)
+            startAutoPlay()
     }
+
+    private fun initViewPagerScroll() {
+        val field = ViewPager::class.java.getDeclaredField("mScroller")
+        field.isAccessible = true
+        scroller = BannerScroller(viewPager.context)
+        scroller.mDuration = scrollTime
+        field.set(viewPager, scroller)
+    }
+
+    private fun startAutoPlay() {
+        handler.removeCallbacks(task)
+        handler.postDelayed(task, delayTime.toLong())
+    }
+
+    private fun stopAutoPlay() {
+        handler.removeCallbacks(task)
+    }
+
+
 
     override fun onPageScrollStateChanged(state: Int) {
         currentItem = viewPager.currentItem
