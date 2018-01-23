@@ -55,10 +55,9 @@ freeline/
 freeline_project_description.json
 
 # personal ignore
-/build
-/Users/gongxuan/Documents/AllGitDemo/Banner/app/src/main/java/com/example/gongxuan/banner/bean
-/Users/gongxuan/Documents/AllGitDemo/Banner/app/src/main/java/com/example/gongxuan/banner/constants
-/Users/gongxuan/Documents/AllGitDemo/Banner/app/src/main/java/com/example/gongxuan/banner/http
-/Users/gongxuan/Documents/AllGitDemo/Banner/app/src/main/java/com/example/gongxuan/banner/util
-/Users/gongxuan/Documents/AllGitDemo/Banner/app/src/main/java/com/example/gongxuan/banner/MainActivity.kt
-/Users/gongxuan/Documents/AllGitDemo/Banner/app/build.gradle
+*bean/
+*/constants/
+*http/
+*util/
+MainActivity.kt
+*app/build.gradle
