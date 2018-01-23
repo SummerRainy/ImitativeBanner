@@ -11,7 +11,6 @@ import android.view.MotionEvent
 class ScrollableViewPager : ViewPager {
     constructor(mContext: Context?) : super(mContext)
     constructor(mContext: Context?, attrs: AttributeSet) : super(mContext,attrs)
-
     private var isScroll:Boolean = true
 
     fun setIsScroll(isScroll :Boolean) {

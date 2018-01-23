@@ -7,7 +7,7 @@ import android.widget.Scroller
  * Created by gongxuan on 2018/1/4.
  */
 class BannerScroller(context: Context?) : Scroller(context) {
-    var mDuration: Int= BannerConfig.DURATION
+    var mDuration: Int= BannerConfig.SCROLL_DURATION
 
     override fun startScroll(startX: Int, startY: Int, dx: Int, dy: Int) {
         super.startScroll(startX, startY, dx, dy, mDuration)

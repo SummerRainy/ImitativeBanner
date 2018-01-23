@@ -1,5 +1,6 @@
 package com.example.gongxuan.banner.widget
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.support.v4.view.PagerAdapter
 import android.support.v4.view.ViewPager
@@ -7,6 +8,7 @@ import android.util.AttributeSet
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -15,8 +17,16 @@ import android.widget.LinearLayout
 import com.example.gongxuan.banner.R
 import com.example.gongxuan.banner.listener.OnBannerListener
 import com.example.gongxuan.banner.loadPic
-import com.youth.banner.BannerConfig
+import io.reactivex.Observable
+import io.reactivex.ObservableEmitter
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
+import io.reactivex.functions.Action
+import io.reactivex.observers.DisposableObserver
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.layout_banner.view.*
+import org.reactivestreams.Subscription
+import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
 /**
@@ -26,8 +36,11 @@ class Banner: FrameLayout, ViewPager.OnPageChangeListener {
     private lateinit var viewPager :ScrollableViewPager
     private lateinit var scroller: BannerScroller
     private var isScroll = BannerConfig.IS_SCROLL
-    private var scrollTime = BannerConfig.DURATION
     private var isAutoPlay = BannerConfig.IS_AUTO_PLAY
+    private var delayInterval = BannerConfig.DELAY_INTERVAL
+    private var scrollDuration = BannerConfig.SCROLL_DURATION
+    private var disposable:Disposable? =null
+
     private var bannerContext:Context
     private var titles: MutableList<String?>
     private var imageUrls: MutableList<String?>
@@ -43,7 +56,7 @@ class Banner: FrameLayout, ViewPager.OnPageChangeListener {
     private var adapter:BannerPagerAdapter? = null
     private var listener : OnBannerListener? = null
     private lateinit var onPageChangeListener: ViewPager.OnPageChangeListener
-    private var previousPosition = 1
+    private var previousPosition = 0
     //private lateinit var indicator : LinearLayout
 
     constructor(context: Context) :this(context,null)
@@ -151,6 +164,14 @@ class Banner: FrameLayout, ViewPager.OnPageChangeListener {
             imageViews.add(imageView)
             imageView.loadPic(context, url)
         }
+        /*for(i in 0 until count) {
+            var imageView = ImageView(context)
+            imageView.scaleType = scaleType
+
+            var url:String? = imageUrls[i]
+            imageViews.add(imageView)
+            imageView.loadPic(context, url)
+        }*/
     }
 
     //构造 indicator
@@ -204,35 +225,73 @@ class Banner: FrameLayout, ViewPager.OnPageChangeListener {
         val field = ViewPager::class.java.getDeclaredField("mScroller")
         field.isAccessible = true
         scroller = BannerScroller(viewPager.context)
-        scroller.mDuration = scrollTime
+        scroller.mDuration = scrollDuration
         field.set(viewPager, scroller)
     }
 
     private fun startAutoPlay() {
-        handler.removeCallbacks(task)
-        handler.postDelayed(task, delayTime.toLong())
+        Log.i("Banner","开始自动轮播")
+        if (count >1 && isAutoPlay) {
+            var observable = Observable.interval(delayInterval.toLong(), delayInterval.toLong(), TimeUnit.MILLISECONDS)
+            disposable =  observable.observeOn(AndroidSchedulers.mainThread()).subscribe {
+                Log.i("Banner","currentItem: "+currentItem)
+                currentItem = if(currentItem == count) {
+                    currentItem+1 % (count+1) + 1
+                }else {
+                    currentItem % (count+1) + 1
+                }
+                viewPager.currentItem = currentItem
+            }
+        }
     }
 
     private fun stopAutoPlay() {
-        handler.removeCallbacks(task)
+        Log.i("Banner","停止自动轮播")
+        disposable?.dispose()
     }
 
+    //当Bannerwindow 中看不见时候，应该停止轮播
+    @SuppressLint("SwitchIntDef")
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        when(visibility) {
+            View.VISIBLE -> {
+                startAutoPlay()
+            }
+            else -> {
+                stopAutoPlay()
+            }
+        }
+        super.onWindowVisibilityChanged(visibility)
+    }
 
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        if(isAutoPlay) {
+            var action = ev?.action
+            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
+                    || action == MotionEvent.ACTION_OUTSIDE) {
+                startAutoPlay()
+            } else if (action == MotionEvent.ACTION_DOWN) {
+                stopAutoPlay()
+            }
+        }
+        return super.dispatchTouchEvent(ev)
+    }
 
     override fun onPageScrollStateChanged(state: Int) {
-        currentItem = viewPager.currentItem
+        var currentItem = viewPager.currentItem
         when(state) {
-            0 -> {
-                when(currentItem) {
-                    0 -> viewPager.setCurrentItem(count,false)
-                    count+1 -> viewPager.setCurrentItem(1,false)
+            ViewPager.SCROLL_STATE_IDLE -> {
+                if (currentItem == count+1) {
+                    viewPager.setCurrentItem(1,false)
+                }
+
+                if (currentItem == 0) {
+                    viewPager.setCurrentItem(count,false)
                 }
             }
-            1-> {
-                when(currentItem) {
-                    0 -> viewPager.setCurrentItem(count,false)
-                    count+1 -> viewPager.setCurrentItem(1,false)
-                }
+            ViewPager.SCROLL_STATE_DRAGGING-> {
+            }
+            ViewPager.SCROLL_STATE_SETTLING-> {
             }
         }
     }
@@ -242,13 +301,14 @@ class Banner: FrameLayout, ViewPager.OnPageChangeListener {
 
     override fun onPageSelected(position: Int) {
         //设置 indicator image(将preIndicator = unselected,currentIndicator = selected)
-        indicatorImages[(previousPosition -1 + count) % count].setImageResource(mIndicatorUnselectedResId)
-        indicatorImages[(position -1 +count) % count].setImageResource(mIndicatorSelectedResId)
+        var currentPosition = toRealPosition(position)
+        indicatorImages[toRealPosition(previousPosition)].setImageResource(mIndicatorUnselectedResId)
+        indicatorImages[currentPosition
+                ].setImageResource(mIndicatorSelectedResId)
         previousPosition = position
 
         //设置标题
-        var currentPosition = if(position == 0) { count }else if(position > count){ 1 }else{ position }
-        bannerTitle.text = titles[currentPosition -1]
+        bannerTitle.text = titles[currentPosition]
     }
 
     /**
@@ -286,5 +346,4 @@ class Banner: FrameLayout, ViewPager.OnPageChangeListener {
             container?.removeView(`object` as View)
         }
     }
-
 }

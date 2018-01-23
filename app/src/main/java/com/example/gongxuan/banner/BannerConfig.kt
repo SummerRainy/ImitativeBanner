@@ -3,8 +3,8 @@ object BannerConfig {
      * banner
      */
     val PADDING_SIZE = 5
-    val TIME = 2000
-    val DURATION = 800
+    val DELAY_INTERVAL = 2000
+    val SCROLL_DURATION = 1000
     val IS_AUTO_PLAY = true
     val IS_SCROLL = true
 
