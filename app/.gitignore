@@ -60,4 +60,4 @@ freeline_project_description.json
 *http/
 *util/
 MainActivity.kt
-*app/build.gradle
+build.gradle
