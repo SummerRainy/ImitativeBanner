@@ -56,7 +56,7 @@ freeline_project_description.json
 
 # personal ignore
 *bean/
-*/constants/
+*constants/
 *http/
 *util/
 MainActivity.kt
